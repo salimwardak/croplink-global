@@ -7,7 +7,7 @@ const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 async function refresh(){
  const {data:{user:u},error:authError}=await db.auth.getUser();if(authError){msg('Session check failed. Please retry.',true);return}user=u;
  $('authPanel').hidden=!!user;$('memberPanel').hidden=!user;$('logout').hidden=!user;
- if(!user){$('adminPanel').hidden=true;return;}
+ if(!user){$('adminPanel').hidden=true;const nav=$('dashboardNav');if(nav)nav.textContent='Dashboard';return;}
  $('memberEmail').textContent=user.email||'';
  const {data:profile}=await db.from('profiles').select('display_name,country,role,company_name,business_type,website,business_description').eq('id',user.id).maybeSingle();
  if(profile){$('companyName').value=profile.company_name||'';$('businessType').value=profile.business_type||'';$('businessWebsite').value=profile.website||'';$('businessDescription').value=profile.business_description||'';$('profileName').value=profile.display_name||'';$('profileCountry').value=profile.country||'';$('profileRole').value=profile.role||'supplier'}
@@ -66,7 +66,7 @@ async function publicListings(){
 
 async function loadModeration(){
  const {data:membership,error:membershipError}=await db.from('admins').select('user_id').eq('user_id',user.id).maybeSingle();
- const panel=$('adminPanel');panel.hidden=!!membershipError||!membership;
+ const panel=$('adminPanel');panel.hidden=!!membershipError||!membership;const nav=$('dashboardNav');if(nav)nav.textContent=panel.hidden?'Dashboard':'Admin Dashboard';
  if(panel.hidden)return;
  const [{data:products,error:pe},{data:requests,error:re}]=await Promise.all([
  db.from('products').select('id,name,country,description,status').eq('status','pending').order('created_at',{ascending:true}).limit(50),
@@ -75,6 +75,7 @@ async function loadModeration(){
  const make=(arr,type)=>(arr||[]).map(x=>'<article class="marketCard"><strong>'+escape(x.name||x.product_name)+'</strong><p>'+escape(x.country)+'</p><p>'+escape(x.description)+'</p><button type="button" class="btn" data-review="'+type+'" data-id="'+escape(x.id)+'" data-status="approved">Approve</button> <button type="button" class="btn outline" data-review="'+type+'" data-id="'+escape(x.id)+'" data-status="rejected">Reject</button></article>').join('');
  $('adminQueue').innerHTML=make(products,'products')+make(requests,'buy_requests')||'<p>Review queue is empty.</p>';
 }
+$('refreshAdmin').addEventListener('click',async()=>{if(user)await loadModeration()});
 $('adminPanel').addEventListener('click',async e=>{
  const b=e.target.closest('button[data-review]');if(!b||!user)return;
  const table=b.dataset.review,status=b.dataset.status;
