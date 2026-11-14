@@ -19,7 +19,7 @@ $('resendConfirmation').addEventListener('click',async()=>{const email=$('authEm
 $('resetPassword').addEventListener('click',async()=>{const email=$('authEmail').value.trim();if(!email){msg('Enter your email first.',true);return}const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:'https://salimwardak.github.io/croplink-global/#marketplace'});msg(error?error.message:'If the address is registered, a reset email will arrive.',!!error)});
 $('authForm').addEventListener('submit',async e=>{
  e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value;
- if(password.length<8){msg('Password must be at least 8 characters.',true);return}
+ if(password.length<12){msg('Password must be at least 12 characters.',true);return}
  const signup=$('authMode').value==='signup';
  const {data,error}=signup?await db.auth.signUp({email,password,options:{emailRedirectTo:'https://salimwardak.github.io/croplink-global/#marketplace'}}):await db.auth.signInWithPassword({email,password});
  if(error){msg(error.message,true);return}
@@ -34,12 +34,12 @@ $('profileForm').addEventListener('submit',async e=>{
 });
 $('productForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!user)return;
- const {error}=await db.from('products').insert({owner_id:user.id,name:$('productName').value.trim(),category:$('productCategory').value.trim(),country:$('productCountry').value.trim(),quantity:$('productQuantity').value.trim(),description:$('productDescription').value.trim()});
+ const {error}=await db.from('products').insert({owner_id:user.id,name:$('productName').value.trim(),category:$('productCategory').value.trim(),country:$('productCountry').value.trim(),quantity:$('productQuantity').value.trim(),contact_email:$('productContact').value.trim()||null,description:$('productDescription').value.trim()});
  msg(error?error.message:'Product submitted for review.',!!error);if(!error){e.target.reset();await refresh()}
 });
 $('requestForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!user)return;
- const {error}=await db.from('buy_requests').insert({buyer_id:user.id,product_name:$('requestName').value.trim(),country:$('requestCountry').value.trim(),description:$('requestDescription').value.trim()});
+ const {error}=await db.from('buy_requests').insert({buyer_id:user.id,product_name:$('requestName').value.trim(),country:$('requestCountry').value.trim(),contact_email:$('requestContact').value.trim()||null,description:$('requestDescription').value.trim()});
  msg(error?error.message:'Buying request submitted for review.',!!error);if(!error){e.target.reset();await refresh()}
 });
 $('memberPanel').addEventListener('click',async e=>{
@@ -58,7 +58,7 @@ function renderLiveListings(){
 $('liveSearch').addEventListener('input',renderLiveListings);
 $('liveType').addEventListener('change',renderLiveListings);
 async function publicListings(){
- const [{data:p,error:ep},{data:r,error:er}]=await Promise.all([db.from('products').select('name,category,country,description,quantity').eq('status','approved').order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('product_name,country,description').eq('status','approved').order('created_at',{ascending:false}).limit(30)]);
+ const [{data:p,error:ep},{data:r,error:er}]=await Promise.all([db.from('products').select('name,category,country,description,quantity,contact_email').eq('status','approved').order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('product_name,country,description,contact_email').eq('status','approved').order('created_at',{ascending:false}).limit(30)]);
  if(ep||er){$('publicListings').textContent='Listings temporarily unavailable.';return}
  liveEntries=[...(p||[]).map(x=>({...x,type:'product',name:x.name})),...(r||[]).map(x=>({...x,type:'request',name:x.product_name}))];
  renderLiveListings();
