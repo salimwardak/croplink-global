@@ -9,8 +9,8 @@ async function refresh(){
  $('authPanel').hidden=!!user;$('memberPanel').hidden=!user;$('logout').hidden=!user;
  if(!user){$('adminPanel').hidden=true;return;}
  $('memberEmail').textContent=user.email||'';
- const {data:profile}=await db.from('profiles').select('display_name,country,role').eq('id',user.id).maybeSingle();
- if(profile){$('profileName').value=profile.display_name||'';$('profileCountry').value=profile.country||'';$('profileRole').value=profile.role||'supplier'}
+ const {data:profile}=await db.from('profiles').select('display_name,country,role,company_name,business_type,website,business_description').eq('id',user.id).maybeSingle();
+ if(profile){$('companyName').value=profile.company_name||'';$('businessType').value=profile.business_type||'';$('businessWebsite').value=profile.website||'';$('businessDescription').value=profile.business_description||'';$('profileName').value=profile.display_name||'';$('profileCountry').value=profile.country||'';$('profileRole').value=profile.role||'supplier'}
  const [{data:p},{data:r}]=await Promise.all([db.from('products').select('id,name,status,created_at').eq('owner_id',user.id).order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('id,product_name,status,created_at').eq('buyer_id',user.id).order('created_at',{ascending:false}).limit(30)]);
  const render=(items,type)=>items?.length?items.map(x=>'<li>'+escape(x.name||x.product_name)+' — '+escape(x.status)+' <button type="button" data-type="'+type+'" data-id="'+escape(x.id)+'">Delete pending</button></li>').join(''):'<li>No entries yet</li>';
  $('myProducts').innerHTML=render(p,'products');$('myRequests').innerHTML=render(r,'buy_requests');await loadModeration();
@@ -29,7 +29,7 @@ $('authForm').addEventListener('submit',async e=>{
 $('logout').addEventListener('click',async()=>{await db.auth.signOut();msg('Signed out.');await refresh()});
 $('profileForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!user)return;
- const {error}=await db.from('profiles').upsert({id:user.id,display_name:$('profileName').value.trim(),country:$('profileCountry').value.trim(),role:$('profileRole').value},{onConflict:'id'});
+ const {error}=await db.from('profiles').upsert({id:user.id,display_name:$('profileName').value.trim(),company_name:$('companyName').value.trim(),business_type:$('businessType').value,business_description:$('businessDescription').value.trim(),website:$('businessWebsite').value.trim(),country:$('profileCountry').value.trim(),role:$('profileRole').value},{onConflict:'id'});
  msg(error?error.message:'Profile saved.',!!error);
 });
 $('productForm').addEventListener('submit',async e=>{
