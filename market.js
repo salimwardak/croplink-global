@@ -3,11 +3,15 @@ const db=createClient('https://zfjvdzjdaeymisczfznq.supabase.co','sb_publishable
 const $=id=>document.getElementById(id);
 const msg=(s,bad=false)=>{const el=$('marketMsg');el.textContent=s;el.style.color=bad?'#ad2929':'#075a36'};
 let user=null;
+let activeWorkspace='profileForm';
+function setWorkspace(pane){if(pane==='adminPanel'&&$('adminTab').hidden)return;activeWorkspace=pane;for(const id of ['profileForm','productForm','requestForm','adminPanel']){const el=$(id);if(el)el.hidden=id!==pane;}for(const b of document.querySelectorAll('.workspaceTab')){const on=b.dataset.pane===pane;b.classList.toggle('active',on);b.setAttribute('aria-selected',String(on));}const lists=$('workspaceLists');if(lists)lists.hidden=!['productForm','requestForm'].includes(pane);}
+$('workspaceTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-pane]');if(b&&!b.hidden)setWorkspace(b.dataset.pane)});
+setWorkspace('profileForm');
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function refresh(){
  const {data:{user:u},error:authError}=await db.auth.getUser();if(authError){msg('Session check failed. Please retry.',true);return}user=u;
  $('authPanel').hidden=!!user;$('memberPanel').hidden=!user;$('logout').hidden=!user;
- if(!user){$('adminPanel').hidden=true;const nav=$('dashboardNav');if(nav)nav.textContent='Dashboard';return;}
+ if(!user){$('adminPanel').hidden=true;$('adminTab').hidden=true;const nav=$('dashboardNav');if(nav)nav.textContent='Dashboard';return;}
  $('memberEmail').textContent=user.email||'';
  const {data:profile}=await db.from('profiles').select('display_name,country,role,company_name,business_type,website,business_description').eq('id',user.id).maybeSingle();
  if(profile){$('companyName').value=profile.company_name||'';$('businessType').value=profile.business_type||'';$('businessWebsite').value=profile.website||'';$('businessDescription').value=profile.business_description||'';$('profileName').value=profile.display_name||'';$('profileCountry').value=profile.country||'';$('profileRole').value=profile.role||'supplier'}
@@ -66,8 +70,8 @@ async function publicListings(){
 
 async function loadModeration(){
  const {data:membership,error:membershipError}=await db.from('admins').select('user_id').eq('user_id',user.id).maybeSingle();
- const panel=$('adminPanel');panel.hidden=!!membershipError||!membership;const nav=$('dashboardNav');if(nav)nav.textContent=panel.hidden?'Dashboard':'Admin Dashboard';
- if(panel.hidden)return;
+ const panel=$('adminPanel');panel.hidden=!!membershipError||!membership;const nav=$('dashboardNav');if(nav)nav.textContent=panel.hidden?'Dashboard':'Admin Dashboard';$('adminTab').hidden=panel.hidden;if(panel.hidden&&activeWorkspace==='adminPanel')setWorkspace('profileForm');
+ if(panel.hidden)return;if(activeWorkspace==='adminPanel')panel.hidden=false;
  const [{data:products,error:pe},{data:requests,error:re}]=await Promise.all([
  db.from('products').select('id,name,country,description,status').eq('status','pending').order('created_at',{ascending:true}).limit(50),
  db.from('buy_requests').select('id,product_name,country,description,status').eq('status','pending').order('created_at',{ascending:true}).limit(50)]);
