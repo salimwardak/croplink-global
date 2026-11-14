@@ -13,11 +13,12 @@ async function refresh(){
  const render=(items,type)=>items?.length?items.map(x=>'<li>'+escape(x.name||x.product_name)+' — '+escape(x.status)+' <button type="button" data-type="'+type+'" data-id="'+escape(x.id)+'">Delete pending</button></li>').join(''):'<li>No entries yet</li>';
  $('myProducts').innerHTML=render(p,'products');$('myRequests').innerHTML=render(r,'buy_requests');await loadModeration();
 }
+$('resendConfirmation').addEventListener('click',async()=>{const email=$('authEmail').value.trim();if(!email){msg('Enter your email first.',true);return}const {error}=await db.auth.resend({type:'signup',email,options:{emailRedirectTo:'https://salimwardak.github.io/croplink-global/#marketplace'}});msg(error?error.message:'If eligible, a new confirmation email has been sent.',!!error)});
 $('authForm').addEventListener('submit',async e=>{
  e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value;
  if(password.length<8){msg('Password must be at least 8 characters.',true);return}
  const signup=$('authMode').value==='signup';
- const {data,error}=signup?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});
+ const {data,error}=signup?await db.auth.signUp({email,password,options:{emailRedirectTo:'https://salimwardak.github.io/croplink-global/#marketplace'}}):await db.auth.signInWithPassword({email,password});
  if(error){msg(error.message,true);return}
  msg(signup&&!data.session?'Account created. Check your email to confirm registration.':'Signed in successfully.');
  await refresh();
@@ -77,4 +78,5 @@ $('adminPanel').addEventListener('click',async e=>{
 });
 
 db.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
+const fragment=new URLSearchParams(window.location.hash.slice(1));if(fragment.get('error_description'))msg(fragment.get('error_description'),true);
 await Promise.all([refresh(),publicListings()]);
