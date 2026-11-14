@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "CropLink Global Agricultural Marketplace",
+  "short_name": "CropLink",
+  "description": "Global agricultural B2B marketplace, supplier offers and buying requests",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#075235",
+  "icons": [
+    {
+      "src": "./assets/croplink-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
