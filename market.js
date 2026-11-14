@@ -5,6 +5,7 @@ const msg=(s,bad=false)=>{const el=$('marketMsg');el.textContent=s;el.style.colo
 let user=null;
 let activeWorkspace='profileForm';
 function setWorkspace(pane){if(pane==='adminPanel'&&$('adminTab').hidden)return;activeWorkspace=pane;for(const id of ['profileForm','productForm','requestForm','adminPanel']){const el=$(id);if(el)el.hidden=id!==pane;}for(const b of document.querySelectorAll('.workspaceTab')){const on=b.dataset.pane===pane;b.classList.toggle('active',on);b.setAttribute('aria-selected',String(on));}const lists=$('workspaceLists');if(lists)lists.hidden=!['productForm','requestForm'].includes(pane);if($('productListSection'))$('productListSection').hidden=pane!=='productForm';if($('requestListSection'))$('requestListSection').hidden=pane!=='requestForm';}
+$('authMode').addEventListener('change',()=>{const signup=$('authMode').value==='signup';$('authPassword').minLength=signup?12:0;$('authPassword').autocomplete=signup?'new-password':'current-password'});
 $('workspaceTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-pane]');if(b&&!b.hidden)setWorkspace(b.dataset.pane)});
 setWorkspace('profileForm');
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
