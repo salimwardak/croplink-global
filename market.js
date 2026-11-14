@@ -34,12 +34,12 @@ $('profileForm').addEventListener('submit',async e=>{
 });
 $('productForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!user)return;
- const {error}=await db.from('products').insert({owner_id:user.id,name:$('productName').value.trim(),category:$('productCategory').value.trim(),country:$('productCountry').value.trim(),quantity:$('productQuantity').value.trim(),contact_email:$('productContact').value.trim()||null,description:$('productDescription').value.trim()});
+ const {error}=await db.from('products').insert({owner_id:user.id,name:$('productName').value.trim(),category:$('productCategory').value.trim(),country:$('productCountry').value.trim(),quantity:$('productQuantity').value.trim(),price:$('productPrice').value?Number($('productPrice').value):null,currency:$('productCurrency').value||null,minimum_order:$('productMOQ').value.trim(),trade_terms:$('productTerms').value||null,contact_email:$('productContact').value.trim()||null,description:$('productDescription').value.trim()});
  msg(error?error.message:'Product submitted for review.',!!error);if(!error){e.target.reset();await refresh()}
 });
 $('requestForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!user)return;
- const {error}=await db.from('buy_requests').insert({buyer_id:user.id,product_name:$('requestName').value.trim(),country:$('requestCountry').value.trim(),contact_email:$('requestContact').value.trim()||null,description:$('requestDescription').value.trim()});
+ const {error}=await db.from('buy_requests').insert({buyer_id:user.id,product_name:$('requestName').value.trim(),country:$('requestCountry').value.trim(),target_quantity:$('requestQuantity').value.trim(),trade_terms:$('requestTerms').value||null,contact_email:$('requestContact').value.trim()||null,description:$('requestDescription').value.trim()});
  msg(error?error.message:'Buying request submitted for review.',!!error);if(!error){e.target.reset();await refresh()}
 });
 $('memberPanel').addEventListener('click',async e=>{
@@ -58,7 +58,7 @@ function renderLiveListings(){
 $('liveSearch').addEventListener('input',renderLiveListings);
 $('liveType').addEventListener('change',renderLiveListings);
 async function publicListings(){
- const [{data:p,error:ep},{data:r,error:er}]=await Promise.all([db.from('products').select('name,category,country,description,quantity,contact_email').eq('status','approved').order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('product_name,country,description,contact_email').eq('status','approved').order('created_at',{ascending:false}).limit(30)]);
+ const [{data:p,error:ep},{data:r,error:er}]=await Promise.all([db.from('products').select('name,category,country,description,quantity,price,currency,minimum_order,trade_terms,contact_email').eq('status','approved').order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('product_name,country,description,target_quantity,trade_terms,contact_email').eq('status','approved').order('created_at',{ascending:false}).limit(30)]);
  if(ep||er){$('publicListings').textContent='Listings temporarily unavailable.';return}
  liveEntries=[...(p||[]).map(x=>({...x,type:'product',name:x.name})),...(r||[]).map(x=>({...x,type:'request',name:x.product_name}))];
  renderLiveListings();
