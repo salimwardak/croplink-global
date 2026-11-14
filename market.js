@@ -5,15 +5,18 @@ const msg=(s,bad=false)=>{const el=$('marketMsg');el.textContent=s;el.style.colo
 let user=null;
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function refresh(){
- const {data:{user:u}}=await db.auth.getUser();user=u;
+ const {data:{user:u},error:authError}=await db.auth.getUser();if(authError){msg('Session check failed. Please retry.',true);return}user=u;
  $('authPanel').hidden=!!user;$('memberPanel').hidden=!user;$('logout').hidden=!user;
  if(!user){$('adminPanel').hidden=true;return;}
  $('memberEmail').textContent=user.email||'';
+ const {data:profile}=await db.from('profiles').select('display_name,country,role').eq('id',user.id).maybeSingle();
+ if(profile){$('profileName').value=profile.display_name||'';$('profileCountry').value=profile.country||'';$('profileRole').value=profile.role||'supplier'}
  const [{data:p},{data:r}]=await Promise.all([db.from('products').select('id,name,status,created_at').eq('owner_id',user.id).order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('id,product_name,status,created_at').eq('buyer_id',user.id).order('created_at',{ascending:false}).limit(30)]);
  const render=(items,type)=>items?.length?items.map(x=>'<li>'+escape(x.name||x.product_name)+' — '+escape(x.status)+' <button type="button" data-type="'+type+'" data-id="'+escape(x.id)+'">Delete pending</button></li>').join(''):'<li>No entries yet</li>';
  $('myProducts').innerHTML=render(p,'products');$('myRequests').innerHTML=render(r,'buy_requests');await loadModeration();
 }
 $('resendConfirmation').addEventListener('click',async()=>{const email=$('authEmail').value.trim();if(!email){msg('Enter your email first.',true);return}const {error}=await db.auth.resend({type:'signup',email,options:{emailRedirectTo:'https://salimwardak.github.io/croplink-global/#marketplace'}});msg(error?error.message:'If eligible, a new confirmation email has been sent.',!!error)});
+$('resetPassword').addEventListener('click',async()=>{const email=$('authEmail').value.trim();if(!email){msg('Enter your email first.',true);return}const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:'https://salimwardak.github.io/croplink-global/#marketplace'});msg(error?error.message:'If the address is registered, a reset email will arrive.',!!error)});
 $('authForm').addEventListener('submit',async e=>{
  e.preventDefault();const email=$('authEmail').value.trim(),password=$('authPassword').value;
  if(password.length<8){msg('Password must be at least 8 characters.',true);return}
@@ -44,7 +47,7 @@ $('memberPanel').addEventListener('click',async e=>{
  const table=b.dataset.type;if(!['products','buy_requests'].includes(table))return;
  if(!confirm('Delete this pending entry?'))return;
  const {error}=await db.from(table).delete().eq('id',b.dataset.id).eq('status','pending');
- msg(error?error.message:'Pending entry deleted.',!!error);await refresh();
+ msg(error?error.message:'Delete request processed. Refreshing your listings.',!!error);await refresh();
 });
 let liveEntries=[];
 function renderLiveListings(){
@@ -86,4 +89,5 @@ $('adminPanel').addEventListener('click',async e=>{
 
 db.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
 const fragment=new URLSearchParams(window.location.hash.slice(1));if(fragment.get('error_description'))msg(fragment.get('error_description'),true);
+db.auth.onAuthStateChange(async(event)=>{if(event==='PASSWORD_RECOVERY'){const newPassword=prompt('Enter a new password (at least 12 characters):');if(!newPassword)return;if(newPassword.length<12){msg('New password must have at least 12 characters.',true);return}const {error}=await db.auth.updateUser({password:newPassword});msg(error?error.message:'Password updated successfully.',!!error)}});
 await Promise.all([refresh(),publicListings()]);
