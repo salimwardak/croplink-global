@@ -46,12 +46,19 @@ $('memberPanel').addEventListener('click',async e=>{
  const {error}=await db.from(table).delete().eq('id',b.dataset.id).eq('status','pending');
  msg(error?error.message:'Pending entry deleted.',!!error);await refresh();
 });
+let liveEntries=[];
+function renderLiveListings(){
+ const query=$('liveSearch').value.trim().toLocaleLowerCase();const type=$('liveType').value;
+ const found=liveEntries.filter(x=>(type==='all'||x.type===type)&&[x.name,x.category,x.country,x.description].join(' ').toLocaleLowerCase().includes(query));
+ $('publicListings').innerHTML=found.map(x=>'<article class="marketCard"><span class="tag">'+(x.type==='product'?'Supplier offer':'Buying request')+'</span><h3>'+escape(x.name)+'</h3><p>'+escape(x.country)+(x.category?' · '+escape(x.category):'')+'</p><small>'+escape(x.quantity||'')+'</small><p>'+escape(x.description)+'</p></article>').join('')||'<p>No matching approved listings yet.</p>';
+}
+$('liveSearch').addEventListener('input',renderLiveListings);
+$('liveType').addEventListener('change',renderLiveListings);
 async function publicListings(){
  const [{data:p,error:ep},{data:r,error:er}]=await Promise.all([db.from('products').select('name,category,country,description,quantity').eq('status','approved').order('created_at',{ascending:false}).limit(30),db.from('buy_requests').select('product_name,country,description').eq('status','approved').order('created_at',{ascending:false}).limit(30)]);
  if(ep||er){$('publicListings').textContent='Listings temporarily unavailable.';return}
- const cards=(p||[]).map(x=>'<article class="marketCard"><b>'+escape(x.name)+'</b><p>'+escape(x.category)+' · '+escape(x.country)+'</p><small>'+escape(x.quantity)+'</small><p>'+escape(x.description)+'</p></article>');
- const requests=(r||[]).map(x=>'<article class="marketCard"><b>Buyer seeks: '+escape(x.product_name)+'</b><p>'+escape(x.country)+'</p><p>'+escape(x.description)+'</p></article>');
- $('publicListings').innerHTML=[...cards,...requests].join('')||'<p>No approved listings yet.</p>';
+ liveEntries=[...(p||[]).map(x=>({...x,type:'product',name:x.name})),...(r||[]).map(x=>({...x,type:'request',name:x.product_name}))];
+ renderLiveListings();
 }
 
 async function loadModeration(){
