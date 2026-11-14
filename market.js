@@ -70,8 +70,8 @@ async function publicListings(){
 
 async function loadModeration(){
  const {data:membership,error:membershipError}=await db.from('admins').select('user_id').eq('user_id',user.id).maybeSingle();
- const panel=$('adminPanel');panel.hidden=!!membershipError||!membership;const nav=$('dashboardNav');if(nav)nav.textContent=panel.hidden?'Dashboard':'Admin Dashboard';$('adminTab').hidden=panel.hidden;if(panel.hidden&&activeWorkspace==='adminPanel')setWorkspace('profileForm');
- if(panel.hidden)return;if(activeWorkspace==='adminPanel')panel.hidden=false;
+ const panel=$('adminPanel');const isAdmin=!membershipError&&!!membership;const nav=$('dashboardNav');if(nav)nav.textContent=isAdmin?'Admin Dashboard':'Dashboard';$('adminTab').hidden=!isAdmin;if(!isAdmin&&activeWorkspace==='adminPanel')activeWorkspace='profileForm';setWorkspace(activeWorkspace);
+ if(!isAdmin)return;
  const [{data:products,error:pe},{data:requests,error:re}]=await Promise.all([
  db.from('products').select('id,name,country,description,status').eq('status','pending').order('created_at',{ascending:true}).limit(50),
  db.from('buy_requests').select('id,product_name,country,description,status').eq('status','pending').order('created_at',{ascending:true}).limit(50)]);
