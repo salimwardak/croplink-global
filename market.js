@@ -53,7 +53,7 @@ let liveEntries=[];
 function renderLiveListings(){
  const query=$('liveSearch').value.trim().toLocaleLowerCase();const type=$('liveType').value;
  const found=liveEntries.filter(x=>(type==='all'||x.type===type)&&[x.name,x.category,x.country,x.description].join(' ').toLocaleLowerCase().includes(query));
- $('publicListings').innerHTML=found.map(x=>'<article class="marketCard"><span class="tag">'+(x.type==='product'?'Supplier offer':'Buying request')+'</span><h3>'+escape(x.name)+'</h3><p>'+escape(x.country)+(x.category?' · '+escape(x.category):'')+'</p><small>'+escape(x.quantity||'')+'</small><p>'+escape(x.description)+'</p>'+(x.contact_email?'<a href="mailto:'+encodeURIComponent(x.contact_email)+'" rel="nofollow">Contact business by email</a>':'')+'</article>').join('')||'<p>No matching approved listings yet.</p>';
+ $('publicListings').innerHTML=found.map(x=>'<article class="marketCard"><span class="tag">'+(x.type==='product'?'Supplier offer':'Buying request')+'</span><h3>'+escape(x.name)+'</h3><p>'+escape(x.country)+(x.category?' · '+escape(x.category):'')+'</p><small>'+escape(x.quantity||x.target_quantity||'')+'</small>'+(x.price!=null?'<p><strong>Indicative price: '+escape(x.currency||'')+' '+escape(x.price)+'</strong></p>':'')+(x.minimum_order?'<p>Minimum order: '+escape(x.minimum_order)+'</p>':'')+(x.trade_terms?'<p>Incoterms 2020: '+escape(x.trade_terms)+'</p>':'')+'<p>'+escape(x.description)+'</p>'+(x.contact_email?'<a href="mailto:'+encodeURIComponent(x.contact_email)+'" rel="nofollow">Contact business by email</a>':'')+'</article>').join('')||'<p>No matching approved listings yet.</p>';
 }
 $('liveSearch').addEventListener('input',renderLiveListings);
 $('liveType').addEventListener('change',renderLiveListings);
