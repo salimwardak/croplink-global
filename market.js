@@ -9,7 +9,7 @@ $('workspaceTabs').addEventListener('click',e=>{const b=e.target.closest('button
 setWorkspace('profileForm');
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function refresh(){
- const {data:{user:u},error:authError}=await db.auth.getUser();if(authError){msg('Session check failed. Please retry.',true);return}user=u;
+ const {data:sessionResult,error:sessionError}=await db.auth.getSession();if(sessionError){console.warn('Session unavailable',sessionError.message)}let u=sessionResult?.session?.user??null;if(u){const verified=await db.auth.getUser();if(verified.error){console.warn('Session verification unavailable',verified.error.message);if(/invalid|expired|refresh.token|not.found/i.test(verified.error.message)){await db.auth.signOut({scope:'local'});u=null}}else u=verified.data.user;}user=u;
  $('authPanel').hidden=!!user;$('memberPanel').hidden=!user;$('logout').hidden=!user;
  if(!user){setWorkspace('profileForm');$('adminPanel').hidden=true;$('adminTab').hidden=true;const nav=$('dashboardNav');if(nav)nav.textContent='Dashboard';return;}
  $('memberEmail').textContent=user.email||'';
