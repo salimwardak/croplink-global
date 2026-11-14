@@ -10,7 +10,7 @@ $('workspaceTabs').addEventListener('click',e=>{const b=e.target.closest('button
 setWorkspace('profileForm');
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function refresh(){
- let u=null;try{const {data,error}=await db.auth.getUser();if(error){console.warn('Auth verification:',error.message);const {data:session}=await db.auth.getSession();u=session?.session?.user??null;if(!u&&/invalid|expired|refresh.token|not.found/i.test(error.message)){await db.auth.signOut({scope:'local'});}}else u=data?.user??null;}catch(error){console.warn('Auth unavailable:',error);try{const {data}=await db.auth.getSession();u=data?.session?.user??null;}catch{}}user=u;
+ let u=null;try{const {data,error}=await db.auth.getUser();if(error){console.warn('Authentication verification failed:',error.message);if(/invalid|expired|refresh.token|not.found/i.test(error.message)){await db.auth.signOut({scope:'local'}).catch(()=>{});}else msg('Unable to verify your session. Check your connection and sign in again.',true);}else u=data?.user??null;}catch(error){console.warn('Authentication unavailable:',error);msg('Connection unavailable. Please try again.',true);}user=u;
  $('authPanel').hidden=!!user;$('memberPanel').hidden=!user;$('logout').hidden=!user;
  if(!user){setWorkspace('profileForm');$('adminPanel').hidden=true;$('adminTab').hidden=true;const nav=$('dashboardNav');if(nav)nav.textContent='Dashboard';return;}
  $('memberEmail').textContent=user.email||'';
@@ -93,7 +93,7 @@ $('adminPanel').addEventListener('click',async e=>{
  b.disabled=false;
 });
 
-db.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
+db.auth.onAuthStateChange(()=>{setTimeout(()=>{refresh().catch(error=>{console.error('Account refresh failed:',error);msg('Unable to load your account. Please retry.',true)})},0)});
 const fragment=new URLSearchParams(window.location.hash.slice(1));if(fragment.get('error_description'))msg(fragment.get('error_description'),true);
 db.auth.onAuthStateChange(async(event)=>{if(event==='PASSWORD_RECOVERY'){const newPassword=prompt('Enter a new password (at least 12 characters):');if(!newPassword)return;if(newPassword.length<12){msg('New password must have at least 12 characters.',true);return}const {error}=await db.auth.updateUser({password:newPassword});msg(error?error.message:'Password updated successfully.',!!error)}});
-await Promise.all([refresh(),publicListings()]);
+await Promise.allSettled([refresh(),publicListings()]).then(results=>results.forEach((result,i)=>{if(result.status==='rejected'){console.error('CropLink initialization failed:',result.reason);if(i===0)msg('Unable to load account details. Please retry.',true);else $('publicListings').textContent='Listings temporarily unavailable.';}}));
